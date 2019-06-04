@@ -36,7 +36,7 @@ test-suite tests
   ghc-options: -Wall -threaded -rtsopts
   type: exitcode-stdio-1.0
   hs-source-dirs: tests
-  main-is: Tests.hs
+  main-is: Main.hs
   other-modules:
     Data.Aeson.ObjectLike.Tests
     Data.Aeson.EnumLike.Tests

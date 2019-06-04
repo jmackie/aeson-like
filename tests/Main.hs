@@ -1,4 +1,4 @@
-module Tests 
+module Main
   ( main
   ) where
 
@@ -13,7 +13,7 @@ main :: IO ()
 main = Tasty.defaultMain tests
 
 tests :: Tasty.TestTree
-tests = Tasty.testGroup "Tests" 
+tests = Tasty.testGroup "Tests"
   [ ObjectLike.tests
   , EnumLike.tests
   ]

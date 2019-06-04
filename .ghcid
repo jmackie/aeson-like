@@ -1,1 +1,1 @@
---command="cabal new-repl test:tests --ghc-options=-fno-break-on-exception --ghc-options=-fno-break-on-error --ghc-options=-v1 --ghc-options=-ferror-spans --ghc-options=-j" --run --restart aeson-dtos.cabal
+--command="cabal new-repl test:tests --ghc-options=-fno-break-on-exception --ghc-options=-fno-break-on-error --ghc-options=-v1 --ghc-options=-ferror-spans --ghc-options=-j" --restart aeson-like.cabal --setup=":load Main" --run
