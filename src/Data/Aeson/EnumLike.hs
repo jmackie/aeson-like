@@ -6,6 +6,8 @@
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+-- |
+-- TODO
 module Data.Aeson.EnumLike
   ( EnumLike(..)
   ) where
@@ -23,6 +25,8 @@ import           Data.Typeable       (Typeable, typeOf)
 import           GHC.Generics
 import           GHC.TypeLits        (KnownSymbol, symbolVal)
 
+-- |
+-- TODO
 newtype EnumLike a = EnumLike a
 
 instance (Typeable a, Generic a, FromText (Rep a)) => Aeson.FromJSON (EnumLike a) where
@@ -38,6 +42,7 @@ instance (Typeable a, Generic a, FromText (Rep a)) => Aeson.FromJSON (EnumLike a
 instance (Generic a, ToText (Rep a)) => Aeson.ToJSON (EnumLike a) where
   toJSON (EnumLike a) = Aeson.String $ toText (from a)
 
+
 class FromText (f :: Type -> Type) where
   fromText :: Text -> Aeson.Parser (f p)
 
@@ -52,6 +57,7 @@ instance (KnownSymbol key) => FromText (Rec0 (Proxy key)) where
     | txt == Text.pack (symbolVal (Proxy @key)) = pure (K1 Proxy)
     | otherwise = fail "nope"
 
+
 class ToText (f :: Type -> Type) where
   toText :: f p -> Text
 
@@ -64,6 +70,7 @@ instance (ToText f, ToText g) => ToText (f :+: g) where
 
 instance (KnownSymbol key) => ToText (Rec0 (Proxy key)) where
   toText _ = Text.pack (symbolVal (Proxy @key))
+
 
 typeName :: forall a. Typeable a => String
 typeName = show (typeOf (undefined :: a))

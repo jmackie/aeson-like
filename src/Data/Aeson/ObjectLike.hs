@@ -11,6 +11,9 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
+-- |
+-- TODO
+--
 module Data.Aeson.ObjectLike
   ( ObjectLike(..)
   , Prop(..)
@@ -31,16 +34,15 @@ import           GHC.Generics
 import           GHC.TypeLits        (KnownSymbol, Symbol, symbolVal)
 
 -- |
--- @Prop@ lets us capture the keys associated with parts of a product type.
-newtype Prop (key :: Symbol) a = Prop { unProp :: a }
-  deriving stock (Generic, Functor, Foldable, Traversable)
-  deriving newtype (Eq, Ord, Show, Aeson.ToJSON, Aeson.FromJSON)
-
-reprop :: forall key key' a. Prop key' a -> Prop key a
-reprop (Prop a) = Prop a
-
--- |
 -- @ObjectLike@ is our deriving via helper.
+--
+-- If a data type is equivalent to a bunch of @Prop@s then it has an instance
+-- of @FromObject@.
+--
+-- If a data type is equivalent to a bunch of @Prop@s then it has an instance
+-- of @ToObject@.
+--
+-- You shouldn't use the constructor, it's just for DerivingVia
 newtype ObjectLike a = ObjectLike a
 
 instance (Typeable a, Generic a, FromObject (Rep a)) => Aeson.FromJSON (ObjectLike a) where
@@ -52,9 +54,19 @@ instance (Typeable a, Generic a, FromObject (Rep a)) => Aeson.FromJSON (ObjectLi
 instance (Generic a, ToObject (Rep a)) => Aeson.ToJSON (ObjectLike a) where
   toJSON (ObjectLike a) = Aeson.Object $ toObject (from a)
 
+
 -- |
--- If a data type is equivalent to a bunch of @Prop@s then it has an instance
--- of @FromObject@.
+-- @Prop@ lets us capture the keys associated with parts of a product type.
+newtype Prop (key :: Symbol) a = Prop { unProp :: a }
+  deriving stock (Generic, Functor, Foldable, Traversable)
+  deriving newtype (Eq, Ord, Show, Aeson.ToJSON, Aeson.FromJSON)
+
+-- |
+-- TODO
+reprop :: forall key key' a. Prop key' a -> Prop key a
+reprop (Prop a) = Prop a
+
+
 class FromObject (f :: Type -> Type) where
   fromObject :: Aeson.Object -> Aeson.Parser (f p)
 
@@ -68,9 +80,7 @@ instance (KnownSymbol key, Aeson.FromJSON a) => FromObject (Rec0 (Prop key a)) w
   fromObject obj = K1 . Prop <$> obj Aeson..: key
     where key = Text.pack $ symbolVal (Proxy @key)
 
--- |
--- If a data type is equivalent to a bunch of @Prop@s then it has an instance
--- of @ToObject@.
+
 class ToObject (f :: Type -> Type) where
   toObject :: f p -> Aeson.Object
 
@@ -83,6 +93,7 @@ instance (ToObject f, ToObject g) => ToObject (f :*: g) where
 instance (KnownSymbol key, Aeson.ToJSON a) => ToObject (Rec0 (Prop key a)) where
   toObject (K1 (Prop a)) = HashMap.singleton key (Aeson.toJSON a)
     where key = Text.pack $ symbolVal (Proxy @key)
+
 
 typeName :: forall a. Typeable a => String
 typeName = show (typeOf (undefined :: a))
