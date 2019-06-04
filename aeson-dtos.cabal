@@ -1,0 +1,49 @@
+cabal-version: 2.2
+name: aeson-dtos
+version: 0.1.0.0
+synopsis: TODO
+-- description:
+homepage: https://github.com/jmackie/aeson-dtos
+-- bug-reports:
+license: BSD-3-Clause
+license-file: LICENSE
+author: Jordan Mackie
+maintainer: jordan.mackie@habito.com
+-- copyright:
+category: Network
+extra-source-files: CHANGELOG.md
+
+source-repository head
+  type: git
+  location: git://github.com/jmackie/aeson-dtos.git
+
+library
+  default-language: Haskell2010
+  ghc-options: -Wall
+  hs-source-dirs: src
+  exposed-modules:
+    Data.Aeson.ObjectLike
+    Data.Aeson.EnumLike
+  -- other-modules:
+  build-depends:
+    base ^>=4.12.0.0,
+    aeson,
+    text,
+    unordered-containers,
+
+test-suite tests
+  default-language: Haskell2010
+  ghc-options: -Wall -threaded -rtsopts
+  type: exitcode-stdio-1.0
+  hs-source-dirs: tests
+  main-is: Tests.hs
+  exposed-modules:
+    Data.Aeson.ObjectLike.Tests
+    Data.Aeson.EnumLike.Tests
+  build-depends:
+    base ^>=4.12.0.0,
+    aeson-dtos,
+    tasty,
+    tasty-hunit,
+    aeson,
+    bytestring,
