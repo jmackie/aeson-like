@@ -25,19 +25,29 @@ tests = Tasty.testGroup "ObjectLike" [ unitTests ]
 
 unitTests :: Tasty.TestTree
 unitTests = Tasty.testGroup "unit tests"
-  [ Tasty.HUnit.testCase "encodes as expected" $
+
+  [ Tasty.HUnit.testCase "data encodes as expected" $
       Aeson.encode exampleUser @=? exampleUserEncoded
 
-  , Tasty.HUnit.testCase "decodes as expected" $
+  , Tasty.HUnit.testCase "data decodes as expected" $
       case Aeson.decode exampleUserEncoded of
-        Nothing -> Tasty.HUnit.assertFailure "example should have decoded"
+        Nothing -> Tasty.HUnit.assertFailure "example (User) should have decoded"
         Just decoded -> decoded @=? exampleUser
+
+  , Tasty.HUnit.testCase "newtype encodes as expected" $
+      Aeson.encode exampleToken @=? exampleTokenEncoded
+
+  , Tasty.HUnit.testCase "newtype decodes as expected" $
+      case Aeson.decode exampleTokenEncoded of
+        Nothing -> Tasty.HUnit.assertFailure "example (Token) should have decoded"
+        Just decoded -> decoded @=? exampleToken
 
   , Tasty.HUnit.testCase "decoding errors are helpful" $
       case Aeson.eitherDecode "{\"names\":\"Foo Bar\",\"id\":1}" of
         Right (_ :: User) -> Tasty.HUnit.assertFailure "decoding should have failed"
         Left err ->
-          Tasty.HUnit.assertBool "error mentions the missing key" (err `contains` "key \"name\" not present")
+          Tasty.HUnit.assertBool "error mentions the missing key"
+            (err `contains` "key \"name\" not present")
   ]
 
 data User = User
@@ -54,6 +64,16 @@ exampleUser =
 
 exampleUserEncoded :: LBS.ByteString
 exampleUserEncoded = "{\"name\":\"Foo Bar\",\"id\":1}"
+
+newtype Token = Token (Prop "token" String)
+  deriving stock (Generic, Eq, Show)
+  deriving (Aeson.FromJSON, Aeson.ToJSON) via (ObjectLike Token)
+
+exampleToken :: Token
+exampleToken = Token (Prop "abcde")
+
+exampleTokenEncoded :: LBS.ByteString
+exampleTokenEncoded = "{\"token\":\"abcde\"}"
 
 contains :: String -> String -> Bool
 contains = flip List.isInfixOf

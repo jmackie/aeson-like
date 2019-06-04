@@ -41,8 +41,11 @@ unitTests = Tasty.testGroup "unit tests"
       case Aeson.eitherDecode "\"nope\"" of
         Right (_ :: FooBar) -> Tasty.HUnit.assertFailure "decoding should have failed"
         Left err -> do
-          Tasty.HUnit.assertBool "error contains the type name" (err `contains` "FooBar")
-          Tasty.HUnit.assertBool "error contains the bad values" (err `contains` "\"nope\"")
+          Tasty.HUnit.assertBool "error contains the type name" 
+            (err `contains` "FooBar")
+
+          Tasty.HUnit.assertBool "error contains the bad values" 
+            (err `contains` "\"nope\"")
   ]
 
 data FooBar
