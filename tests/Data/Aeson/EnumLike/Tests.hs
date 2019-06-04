@@ -3,7 +3,7 @@
 {-# LANGUAGE DerivingVia         #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Data.Aeson.EnumLike.Tests 
+module Data.Aeson.EnumLike.Tests
   ( tests
   ) where
 
@@ -23,7 +23,7 @@ tests :: Tasty.TestTree
 tests = Tasty.testGroup "EnumLike" [ unitTests ]
 
 unitTests :: Tasty.TestTree
-unitTests = Tasty.testGroup "unit tests" 
+unitTests = Tasty.testGroup "unit tests"
   [ Tasty.HUnit.testCase "encodes as expected" $ do
       Aeson.encode (Foo Proxy) @=? "\"foo\""
       Aeson.encode (Bar Proxy) @=? "\"bar\""
@@ -45,7 +45,7 @@ unitTests = Tasty.testGroup "unit tests"
           Tasty.HUnit.assertBool "error contains the bad values" (err `contains` "\"nope\"")
   ]
 
-data FooBar 
+data FooBar
   = Foo (Proxy "foo")
   | Bar (Proxy "bar")
   deriving (Generic, Eq, Show)

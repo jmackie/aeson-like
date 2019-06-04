@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
-module Data.Aeson.ObjectLike.Tests 
+module Data.Aeson.ObjectLike.Tests
   ( tests
   ) where
 
@@ -24,8 +24,8 @@ tests :: Tasty.TestTree
 tests = Tasty.testGroup "ObjectLike" [ unitTests ]
 
 unitTests :: Tasty.TestTree
-unitTests = Tasty.testGroup "unit tests" 
-  [ Tasty.HUnit.testCase "encodes as expected" $ 
+unitTests = Tasty.testGroup "unit tests"
+  [ Tasty.HUnit.testCase "encodes as expected" $
       Aeson.encode exampleUser @=? exampleUserEncoded
 
   , Tasty.HUnit.testCase "decodes as expected" $
@@ -36,7 +36,7 @@ unitTests = Tasty.testGroup "unit tests"
   , Tasty.HUnit.testCase "decoding errors are helpful" $
       case Aeson.eitherDecode "{\"names\":\"Foo Bar\",\"id\":1}" of
         Right (_ :: User) -> Tasty.HUnit.assertFailure "decoding should have failed"
-        Left err -> 
+        Left err ->
           Tasty.HUnit.assertBool "error mentions the missing key" (err `contains` "key \"name\" not present")
   ]
 
@@ -48,11 +48,11 @@ data User = User
   deriving (Aeson.FromJSON, Aeson.ToJSON) via (ObjectLike User)
 
 exampleUser :: User
-exampleUser = 
+exampleUser =
   User (Prop @"id" 1) (Prop @"name" "Foo Bar")   -- I think this is neat...
 --User { userId = Prop 1, userName = Prop "Foo Bar" }
 
-exampleUserEncoded :: LBS.ByteString 
+exampleUserEncoded :: LBS.ByteString
 exampleUserEncoded = "{\"name\":\"Foo Bar\",\"id\":1}"
 
 contains :: String -> String -> Bool

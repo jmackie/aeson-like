@@ -34,7 +34,7 @@ import           GHC.TypeLits        (KnownSymbol, Symbol, symbolVal)
 -- @Prop@ lets us capture the keys associated with parts of a product type.
 newtype Prop (key :: Symbol) a = Prop { unProp :: a }
   deriving stock (Generic, Functor, Foldable, Traversable)
-  deriving newtype (Eq, Ord, Show, Aeson.ToJSON, Aeson.FromJSON) 
+  deriving newtype (Eq, Ord, Show, Aeson.ToJSON, Aeson.FromJSON)
 
 reprop :: forall key key' a. Prop key' a -> Prop key a
 reprop (Prop a) = Prop a

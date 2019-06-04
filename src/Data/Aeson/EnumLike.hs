@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-module Data.Aeson.EnumLike 
+module Data.Aeson.EnumLike
   ( EnumLike(..)
   ) where
 
@@ -32,8 +32,8 @@ instance (Typeable a, Generic a, FromText (Rep a)) => Aeson.FromJSON (EnumLike a
       pure . EnumLike . to $ a
     where
     helpfulFailure :: Text -> Aeson.Parser b
-    helpfulFailure txt = 
-      fail $ "unknown value for " <> typeName @a <> ": " <> show txt 
+    helpfulFailure txt =
+      fail $ "unknown value for " <> typeName @a <> ": " <> show txt
 
 instance (Generic a, ToText (Rep a)) => Aeson.ToJSON (EnumLike a) where
   toJSON (EnumLike a) = Aeson.String $ toText (from a)
