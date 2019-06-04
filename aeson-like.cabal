@@ -37,7 +37,7 @@ test-suite tests
   type: exitcode-stdio-1.0
   hs-source-dirs: tests
   main-is: Tests.hs
-  exposed-modules:
+  other-modules:
     Data.Aeson.ObjectLike.Tests
     Data.Aeson.EnumLike.Tests
   build-depends:
