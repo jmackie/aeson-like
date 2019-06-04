@@ -1,4 +1,4 @@
-# `aeson-dtos`
+# `aeson-like`
 
 ## TODO
 
