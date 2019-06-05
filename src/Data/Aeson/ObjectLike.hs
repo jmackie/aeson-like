@@ -80,7 +80,7 @@ instance (KnownSymbol key, Aeson.FromJSON a) => FromObject (Rec0 (Prop key (Mayb
   fromObject obj = K1 . Prop <$> obj Aeson..:? key
     where key = Text.pack $ symbolVal (Proxy @key)
 
-instance {-# oVeRlApPaBlE #-} (KnownSymbol key, Aeson.FromJSON a) => FromObject (Rec0 (Prop key a)) where
+instance {-# iNCoHErEnt #-} (KnownSymbol key, Aeson.FromJSON a) => FromObject (Rec0 (Prop key a)) where
   fromObject obj = K1 . Prop <$> obj Aeson..: key
     where key = Text.pack $ symbolVal (Proxy @key)
 
