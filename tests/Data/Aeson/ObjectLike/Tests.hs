@@ -26,21 +26,37 @@ tests = Tasty.testGroup "ObjectLike" [ unitTests ]
 unitTests :: Tasty.TestTree
 unitTests = Tasty.testGroup "unit tests"
 
-  [ Tasty.HUnit.testCase "data encodes as expected" $
+  [ Tasty.HUnit.testCase "User encodes as expected" $
       Aeson.encode exampleUser @=? exampleUserEncoded
 
-  , Tasty.HUnit.testCase "data decodes as expected" $
+  , Tasty.HUnit.testCase "User decodes as expected" $
       case Aeson.decode exampleUserEncoded of
-        Nothing -> Tasty.HUnit.assertFailure "example (User) should have decoded"
+        Nothing -> Tasty.HUnit.assertFailure "decoding failed"
         Just decoded -> decoded @=? exampleUser
 
-  , Tasty.HUnit.testCase "newtype encodes as expected" $
+  , Tasty.HUnit.testCase "Token (newtype) encodes as expected" $
       Aeson.encode exampleToken @=? exampleTokenEncoded
 
-  , Tasty.HUnit.testCase "newtype decodes as expected" $
+  , Tasty.HUnit.testCase "Token (newtype) decodes as expected" $
       case Aeson.decode exampleTokenEncoded of
-        Nothing -> Tasty.HUnit.assertFailure "example (Token) should have decoded"
+        Nothing -> Tasty.HUnit.assertFailure "decoding failed"
         Just decoded -> decoded @=? exampleToken
+
+  , Tasty.HUnit.testCase "Patchy decodes from an empty object" $
+      case Aeson.decode "{}" of
+        Nothing -> Tasty.HUnit.assertFailure "decoding failed"
+        Just decoded -> 
+          decoded @=? Patchy (Prop @"foo" Nothing) (Prop @"bar" Nothing)
+
+  , Tasty.HUnit.testCase "Patchy decodes from a partial object" $
+      case Aeson.decode "{\"foo\":42}" of
+        Nothing -> Tasty.HUnit.assertFailure "decoding failed"
+        Just decoded -> 
+          decoded @=? Patchy (Prop @"foo" (Just 42)) (Prop @"bar" Nothing)
+
+  , Tasty.HUnit.testCase "empty Patchy encodes to nulls" $
+      Aeson.encode (Patchy (Prop @"foo" Nothing) (Prop @"bar" Nothing)) 
+        @=? "{\"foo\":null,\"bar\":null}"
 
   , Tasty.HUnit.testCase "decoding errors are helpful" $
       case Aeson.eitherDecode "{\"names\":\"Foo Bar\",\"id\":1}" of
@@ -74,6 +90,13 @@ exampleToken = Token (Prop "abcde")
 
 exampleTokenEncoded :: LBS.ByteString
 exampleTokenEncoded = "{\"token\":\"abcde\"}"
+
+data Patchy = Patchy
+  { patchyInt    :: Prop "foo" (Maybe Int)
+  , patchyString :: Prop "bar" (Maybe String)
+  }
+  deriving (Generic, Eq, Show)
+  deriving (Aeson.FromJSON, Aeson.ToJSON) via (ObjectLike Patchy)
 
 contains :: String -> String -> Bool
 contains = flip List.isInfixOf

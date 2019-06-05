@@ -76,7 +76,11 @@ instance FromObject f => FromObject (M1 i c f) where
 instance (FromObject f, FromObject g) => FromObject (f :*: g) where
   fromObject obj = liftA2 (:*:) (fromObject obj) (fromObject obj)
 
-instance (KnownSymbol key, Aeson.FromJSON a) => FromObject (Rec0 (Prop key a)) where
+instance (KnownSymbol key, Aeson.FromJSON a) => FromObject (Rec0 (Prop key (Maybe a))) where
+  fromObject obj = K1 . Prop <$> obj Aeson..:? key
+    where key = Text.pack $ symbolVal (Proxy @key)
+
+instance {-# oVeRlApPaBlE #-} (KnownSymbol key, Aeson.FromJSON a) => FromObject (Rec0 (Prop key a)) where
   fromObject obj = K1 . Prop <$> obj Aeson..: key
     where key = Text.pack $ symbolVal (Proxy @key)
 
