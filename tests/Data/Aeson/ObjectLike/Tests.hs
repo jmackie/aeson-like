@@ -30,33 +30,52 @@ unitTests = Tasty.testGroup "unit tests"
       Aeson.encode exampleUser @=? exampleUserEncoded
 
   , Tasty.HUnit.testCase "User decodes as expected" $
-      case Aeson.decode exampleUserEncoded of
-        Nothing -> Tasty.HUnit.assertFailure "decoding failed"
-        Just decoded -> decoded @=? exampleUser
+      case Aeson.eitherDecode exampleUserEncoded of
+        Left err -> Tasty.HUnit.assertFailure ("decoding failed: " <> err)
+        Right decoded -> decoded @=? exampleUser
 
   , Tasty.HUnit.testCase "Token (newtype) encodes as expected" $
       Aeson.encode exampleToken @=? exampleTokenEncoded
 
   , Tasty.HUnit.testCase "Token (newtype) decodes as expected" $
-      case Aeson.decode exampleTokenEncoded of
-        Nothing -> Tasty.HUnit.assertFailure "decoding failed"
-        Just decoded -> decoded @=? exampleToken
+      case Aeson.eitherDecode exampleTokenEncoded of
+        Left err -> Tasty.HUnit.assertFailure ("decoding failed: " <> err)
+        Right decoded -> decoded @=? exampleToken
 
   , Tasty.HUnit.testCase "Patchy decodes from an empty object" $
-      case Aeson.decode "{}" of
-        Nothing -> Tasty.HUnit.assertFailure "decoding failed"
-        Just decoded -> 
+      case Aeson.eitherDecode "{}" of
+        Left err -> Tasty.HUnit.assertFailure ("decoding failed: " <> err)
+        Right decoded -> 
           decoded @=? Patchy (Prop @"foo" Nothing) (Prop @"bar" Nothing)
 
   , Tasty.HUnit.testCase "Patchy decodes from a partial object" $
-      case Aeson.decode "{\"foo\":42}" of
-        Nothing -> Tasty.HUnit.assertFailure "decoding failed"
-        Just decoded -> 
+      case Aeson.eitherDecode "{\"foo\":42}" of
+        Left err -> Tasty.HUnit.assertFailure ("decoding failed: " <> err)
+        Right decoded -> 
           decoded @=? Patchy (Prop @"foo" (Just 42)) (Prop @"bar" Nothing)
 
   , Tasty.HUnit.testCase "empty Patchy encodes to nulls" $
       Aeson.encode (Patchy (Prop @"foo" Nothing) (Prop @"bar" Nothing)) 
         @=? "{\"foo\":null,\"bar\":null}"
+
+  , Tasty.HUnit.testCase "Units decodes as expected" $
+      -- NOTE: aeson represents () as an empty array
+      case Aeson.eitherDecode "{\"unit\":[],\"another_unit\":[]}" of
+        Left err -> Tasty.HUnit.assertFailure ("decoding failed: " <> err)
+        Right decoded -> 
+          decoded @=? Units (Prop @"unit" ()) (Prop @"another_unit" ())
+
+  , Tasty.HUnit.testCase "Units encodes as expected" $
+      Aeson.encode (Units (Prop @"unit" ()) (Prop @"another_unit" ()))
+        @=? "{\"another_unit\":[],\"unit\":[]}"
+
+  , Tasty.HUnit.testCase "Stub decodes as expected" $
+      case Aeson.eitherDecode "{}" of
+        Left err -> Tasty.HUnit.assertFailure ("decoding failed: " <> err)
+        Right decoded -> decoded @=? Stub
+
+  , Tasty.HUnit.testCase "Stub encodes as expected" $
+      Aeson.encode Stub @=? "{}"
 
   , Tasty.HUnit.testCase "decoding errors are helpful" $
       case Aeson.eitherDecode "{\"names\":\"Foo Bar\",\"id\":1}" of
@@ -97,6 +116,17 @@ data Patchy = Patchy
   }
   deriving (Generic, Eq, Show)
   deriving (Aeson.FromJSON, Aeson.ToJSON) via (ObjectLike Patchy)
+
+data Units = Units
+  { why :: Prop "unit" ()
+  , tho :: Prop "another_unit" ()
+  }
+  deriving (Generic, Eq, Show)
+  deriving (Aeson.FromJSON, Aeson.ToJSON) via (ObjectLike Units)
+
+data Stub = Stub 
+  deriving (Generic, Eq, Show)
+  deriving (Aeson.FromJSON, Aeson.ToJSON) via (ObjectLike Stub)
 
 contains :: String -> String -> Bool
 contains = flip List.isInfixOf

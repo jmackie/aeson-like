@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE KindSignatures       #-}
+{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -57,6 +58,10 @@ instance (KnownSymbol key) => FromText (Rec0 (Proxy key)) where
     | txt == Text.pack (symbolVal (Proxy @key)) = pure (K1 Proxy)
     | otherwise = fail "nope"
 
+instance FromText U1 where
+  fromText "" = pure U1
+  fromText other = fail ("expecting empty text, got: " <> show other)
+
 
 class ToText (f :: Type -> Type) where
   toText :: f p -> Text
@@ -71,6 +76,9 @@ instance (ToText f, ToText g) => ToText (f :+: g) where
 instance (KnownSymbol key) => ToText (Rec0 (Proxy key)) where
   toText _ = Text.pack (symbolVal (Proxy @key))
 
+instance ToText U1 where
+  toText U1 = ""
+  
 
 typeName :: forall a. Typeable a => String
 typeName = show (typeOf (undefined :: a))

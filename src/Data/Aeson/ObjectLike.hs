@@ -84,6 +84,11 @@ instance {-# oVeRlApPaBlE #-} (KnownSymbol key, Aeson.FromJSON a) => FromObject 
   fromObject obj = K1 . Prop <$> obj Aeson..: key
     where key = Text.pack $ symbolVal (Proxy @key)
 
+instance FromObject U1 where
+  fromObject obj 
+    | HashMap.null obj = pure U1
+    | otherwise = fail "expecting an empty object" 
+
 
 class ToObject (f :: Type -> Type) where
   toObject :: f p -> Aeson.Object
@@ -98,6 +103,8 @@ instance (KnownSymbol key, Aeson.ToJSON a) => ToObject (Rec0 (Prop key a)) where
   toObject (K1 (Prop a)) = HashMap.singleton key (Aeson.toJSON a)
     where key = Text.pack $ symbolVal (Proxy @key)
 
+instance ToObject U1 where
+  toObject U1 = HashMap.empty
 
 typeName :: forall a. Typeable a => String
 typeName = show (typeOf (undefined :: a))

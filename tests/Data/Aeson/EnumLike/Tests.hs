@@ -24,18 +24,26 @@ tests = Tasty.testGroup "EnumLike" [ unitTests ]
 
 unitTests :: Tasty.TestTree
 unitTests = Tasty.testGroup "unit tests"
-  [ Tasty.HUnit.testCase "encodes as expected" $ do
+  [ Tasty.HUnit.testCase "FooBar encodes as expected" $ do
       Aeson.encode (Foo Proxy) @=? "\"foo\""
       Aeson.encode (Bar Proxy) @=? "\"bar\""
 
-  , Tasty.HUnit.testCase "decodes as expected" $ do
-      case Aeson.decode "\"foo\"" of
-        Nothing      -> Tasty.HUnit.assertFailure ""
-        Just decoded -> decoded @=? Foo Proxy
+  , Tasty.HUnit.testCase "FooBar decodes as expected" $ do
+      case Aeson.eitherDecode "\"foo\"" of
+        Left err -> Tasty.HUnit.assertFailure ("decoding failed: " <> err)
+        Right decoded -> decoded @=? Foo Proxy
 
-      case Aeson.decode "\"bar\"" of
-        Nothing      -> Tasty.HUnit.assertFailure ""
-        Just decoded -> decoded @=? Bar Proxy
+      case Aeson.eitherDecode "\"bar\"" of
+        Left err -> Tasty.HUnit.assertFailure ("decoding failed: " <> err)
+        Right decoded -> decoded @=? Bar Proxy
+
+  , Tasty.HUnit.testCase "Stub encodes as expected" $
+      Aeson.encode Stub @=? "\"\""
+
+  , Tasty.HUnit.testCase "Stub decodes as expected" $
+      case Aeson.eitherDecode "\"\"" of
+        Left err -> Tasty.HUnit.assertFailure ("decoding failed: " <> err)
+        Right decoded -> decoded @=? Stub
 
   , Tasty.HUnit.testCase "decoding errors are helpful" $
       case Aeson.eitherDecode "\"nope\"" of
@@ -53,6 +61,10 @@ data FooBar
   | Bar (Proxy "bar")
   deriving (Generic, Eq, Show)
   deriving (Aeson.FromJSON, Aeson.ToJSON) via (EnumLike FooBar)
+
+data Stub = Stub 
+  deriving (Generic, Eq, Show)
+  deriving (Aeson.FromJSON, Aeson.ToJSON) via (EnumLike Stub)
 
 contains :: String -> String -> Bool
 contains = flip List.isInfixOf
