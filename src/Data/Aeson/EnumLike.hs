@@ -28,7 +28,7 @@ import           GHC.TypeLits        (KnownSymbol, symbolVal)
 
 -- |
 -- TODO
-newtype EnumLike a = EnumLike a
+newtype EnumLike a = EnumLike { getEnumLike :: a }
 
 instance (Typeable a, Generic a, FromText (Rep a)) => Aeson.FromJSON (EnumLike a) where
   parseJSON =

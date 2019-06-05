@@ -43,7 +43,7 @@ import           GHC.TypeLits        (KnownSymbol, Symbol, symbolVal)
 -- of @ToObject@.
 --
 -- You shouldn't use the constructor, it's just for DerivingVia
-newtype ObjectLike a = ObjectLike a
+newtype ObjectLike a = ObjectLike { getObjectLike :: a }
 
 instance (Typeable a, Generic a, FromObject (Rep a)) => Aeson.FromJSON (ObjectLike a) where
   parseJSON =
