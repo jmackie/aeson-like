@@ -25,6 +25,7 @@ import           Prelude
 import           Control.Applicative (liftA2)
 import qualified Data.Aeson          as Aeson
 import qualified Data.Aeson.Types    as Aeson (Parser)
+import           Data.Hashable       (Hashable)
 import qualified Data.HashMap.Strict as HashMap
 import           Data.Kind           (Type)
 import           Data.Proxy          (Proxy(..))
@@ -59,7 +60,7 @@ instance (Generic a, ToObject (Rep a)) => Aeson.ToJSON (ObjectLike a) where
 -- @Prop@ lets us capture the keys associated with parts of a product type.
 newtype Prop (key :: Symbol) a = Prop { unProp :: a }
   deriving stock (Generic, Functor, Foldable, Traversable)
-  deriving newtype (Eq, Ord, Show, Aeson.ToJSON, Aeson.FromJSON)
+  deriving newtype (Eq, Ord, Show, Aeson.ToJSON, Aeson.FromJSON, Hashable)
 
 -- |
 -- TODO
