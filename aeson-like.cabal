@@ -58,7 +58,6 @@ test-suite readme
   main-is: README.lhs
   ghc-options:
     -pgmL markdown-unlit -Wall
-  default-extensions: OverloadedStrings
   build-depends:
     base,
     aeson,

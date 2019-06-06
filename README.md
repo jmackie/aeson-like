@@ -1,67 +1,98 @@
 # `aeson-like`
 
-> Travis badge ere
+[![Build Status](https://travis-ci.org/jmackie/aeson-like.svg?branch=master)](https://travis-ci.org/jmackie/aeson-like)
+
+> NOTE: name is subject to change cos I don't like it.
+
+## tl;dr
+
+A bunch of utilities to make developing against `json` APIs easier.
 
 <details>
 <summary>Code Preamble</summary>
 <p>
-All the code in this file is compiled and tested, so we need a module header
-and stuff...
+
+All the code in this file is compiled and tested, so we need a module header.
 
 ```haskell
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE DeriveGeneric    #-}
-{-# LANGUAGE DerivingVia      #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE DerivingVia       #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications  #-}
 
 import Prelude
-import GHC.Generics (Generic)
+
+--import GHC.Generics (Generic)
+import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as Aeson
-import Data.Proxy (Proxy(..))
+--import Data.Proxy (Proxy(..))
 import Test.Tasty
 import Test.Tasty.HUnit
+
+--import Data.Aeson.ObjectLike (ObjectLike(..), Prop(..))
+--import Data.Aeson.EnumLike (EnumLike(..))
 ```
 
 </p>
 </details>
 
-## tl;dr 
+## `Data.Aeson.ObjectLike`
 
-Easy `ToJSON` and `FromJSON` instances for types modelling json data
+Suppose we have the following (_obligatory_) user type:
 
- - Put object keys at the type level and keep record selector names idiomatic.
- - Map sum types to strings at the type level and avoid writing loads of boilerplate.
-
-
-```haskell
-import Data.Aeson.ObjectLike (ObjectLike(..), Prop(..))
-import Data.Aeson.EnumLike (EnumLike(..))
-
--- |
--- Encodes/decodes as:
--- 
--- { "id": 42, "name": "foo", "dog_preference": "all_dogs" }
---
-data User = User
-  { userId :: Prop "id" Int
-  , userName :: Prop "name" String
-  , userDogPreference :: Prop "dog_preference" DogPreference
-  }
-  deriving (Generic)
-  deriving (Aeson.ToJSON, Aeson.FromJSON) via (ObjectLike User)
-
-
-data DogPreference
-  = AllDogs (Proxy "all_dogs")
-  | AlmostAllDogs (Proxy "almost_all_dogs")
-  deriving (Generic)
-  deriving (Aeson.ToJSON, Aeson.FromJSON) via (EnumLike DogPreference)
-
+```json
+{
+  "id": 42,
+  "name": "foo",
+  "age": 24
+}
 ```
 
-## Motivation
+If we want to decode this to a haskell type we have a few choices.
 
-If you've ever developed against a JSON API in haskell 
+**Option 1**: Crack open the [`aeson`][aeson-hackage] docs and remember how to
+write instances by hand
+
+```haskell
+
+data User = User
+  { userId   :: Int
+  , userName :: String
+  , userAge  :: Int
+  }
+  deriving (Show, Eq)
+
+instance Aeson.FromJSON User where
+  parseJSON =
+    Aeson.withObject "User" $ \object ->
+      User <$> object .: "id"
+           <*> object .: "name"
+           <*> object .: "age"
+
+instance Aeson.ToJSON User where
+  toJSON user =
+    Aeson.object
+      [ "id"   .= userId user
+      , "name" .= userName user
+      , "age"  .= userAge user
+      ]
+```
+
+That's nice and explicit, but for any non-trivial application you run into
+several issues:
+
+1. It's noisy. The important logic - i.e. which record fields map to which
+   object keys - can get lost in the boilerplate.
+
+2. It's bloated. That boilerplate can make for unwieldy modules quite
+   quickly. While _explicit_ code like this is generally easier to read and
+   follow, I find that's true only up until a certain amount of code.
+
+3. The logic for mapping record selectors to object keys is duplicated.
+
+4. If you're writing a lot of mechanical code like this, it's very easy to get
+   wrong. And the compiler mostly isn't going to help you.
 
 ## TODO
 
@@ -69,7 +100,7 @@ If you've ever developed against a JSON API in haskell
 - [ ] Better type errors
 - [ ] Document things
 - [ ] More tests (including hedgehog properties)
-- [ ] Travis CI
+- [x] Travis CI
 
 <details>
 <summary>Tests</summary>
@@ -81,15 +112,16 @@ main = defaultMain tests
 
 tests :: TestTree
 tests = testGroup "README"
-  [ testCase "User encodes like I said it does" $ do
-      let user = User (Prop @"id" 42) 
-                      (Prop @"name" "foo") 
-                      (Prop @"dog_preference" (AllDogs Proxy))
+  [ testCase "User example" $ do
+      Aeson.encode (User 1 "john doe" 42) @?=
+        "{\"age\":42,\"name\":\"john doe\",\"id\":1}"
 
-      Aeson.encode user @?= 
-        "{\"dog_preference\":\"all_dogs\",\"name\":\"foo\",\"id\":42}"
+      Aeson.decode "{\"age\":42,\"name\":\"john doe\",\"id\":1}" @?=
+        Just (User 1 "john doe" 42)
   ]
 ```
 
 </p>
 </details>
+
+[aeson-hackage]: https://hackage.haskell.org/package/aeson
