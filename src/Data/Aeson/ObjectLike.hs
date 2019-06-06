@@ -35,15 +35,7 @@ import           GHC.Generics
 import           GHC.TypeLits        (KnownSymbol, Symbol, symbolVal)
 
 -- |
--- @ObjectLike@ is our deriving via helper.
---
--- If a data type is equivalent to a bunch of @Prop@s then it has an instance
--- of @FromObject@.
---
--- If a data type is equivalent to a bunch of @Prop@s then it has an instance
--- of @ToObject@.
---
--- You shouldn't use the constructor, it's just for DerivingVia
+-- TODO
 newtype ObjectLike a = ObjectLike { getObjectLike :: a }
 
 instance (Typeable a, Generic a, FromObject (Rep a)) => Aeson.FromJSON (ObjectLike a) where
@@ -86,9 +78,9 @@ instance {-# iNCoHErEnt #-} (KnownSymbol key, Aeson.FromJSON a) => FromObject (R
     where key = Text.pack $ symbolVal (Proxy @key)
 
 instance FromObject U1 where
-  fromObject obj 
+  fromObject obj
     | HashMap.null obj = pure U1
-    | otherwise = fail "expecting an empty object" 
+    | otherwise = fail "expecting an empty object"
 
 
 class ToObject (f :: Type -> Type) where
@@ -106,6 +98,7 @@ instance (KnownSymbol key, Aeson.ToJSON a) => ToObject (Rec0 (Prop key a)) where
 
 instance ToObject U1 where
   toObject U1 = HashMap.empty
+
 
 typeName :: forall a. Typeable a => String
 typeName = show (typeOf (undefined :: a))

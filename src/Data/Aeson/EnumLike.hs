@@ -78,7 +78,7 @@ instance (KnownSymbol key) => ToText (Rec0 (Proxy key)) where
 
 instance ToText U1 where
   toText U1 = ""
-  
+
 
 typeName :: forall a. Typeable a => String
 typeName = show (typeOf (undefined :: a))
