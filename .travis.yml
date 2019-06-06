@@ -1,0 +1,11 @@
+language: haskell
+ghc:
+  # NOTE: -XDerivingVia came in 8.6.1
+  # https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/8.6.1-notes.html
+  - "8.6"
+
+install:
+  cabal new-build --only-dependencies
+
+script:
+  cabal new-build && cabal new-test
