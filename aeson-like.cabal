@@ -34,11 +34,11 @@ library
     text,
     unordered-containers,
 
-test-suite tests
+test-suite unit
   default-language: Haskell2010
   ghc-options: -Wall -threaded -rtsopts
   type: exitcode-stdio-1.0
-  hs-source-dirs: tests
+  hs-source-dirs: test
   main-is: Main.hs
   other-modules:
     Data.Aeson.ObjectLike.Tests
@@ -50,6 +50,17 @@ test-suite tests
     tasty-hunit,
     aeson,
     bytestring,
+    doctest,
+
+test-suite doc
+  default-language: Haskell2010
+  ghc-options: -Wall 
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Doc.hs
+  build-depends:
+    base, 
+    doctest,
 
 test-suite readme
   default-language: Haskell2010
