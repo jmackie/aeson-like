@@ -8,7 +8,10 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 -- |
--- TODO
+-- Decorate sum types with their stringy representations.
+--
+-- Note this module is only useful with @-XDerivingVia@ (introduced in GHC 8.6.x).
+--
 module Data.Aeson.EnumLike
   ( EnumLike(..)
   ) where
@@ -17,17 +20,57 @@ import           Prelude
 
 import           Control.Applicative ((<|>))
 import qualified Data.Aeson          as Aeson
-import           qualified Data.Aeson.Types    as Aeson (Parser)
+import qualified Data.Aeson.Types    as Aeson (Parser)
 import           Data.Kind           (Type)
 import           Data.Proxy          (Proxy(..))
 import           Data.Text           (Text)
 import qualified Data.Text           as Text
 import           Data.Typeable       (Typeable, typeOf)
 import           GHC.Generics
-import           GHC.TypeLits        (KnownSymbol, symbolVal)
+import           GHC.TypeLits
+
+-- $setup
+-- >>> :set -XDeriveGeneric
+-- >>> :set -XDataKinds
+-- >>> import GHC.Generics (Generic)
+-- >>> import qualified Data.Aeson as Aeson
 
 -- |
--- TODO
+-- A @DerivingVia@ helper for generating 'Aeson.FromJSON' and 'Aeson.ToJSON'
+-- instances. 'EnumLike' @a@ has these instances when @a@ is a sum of 'Symbol'
+-- proxies.
+--
+-- === Example
+--
+-- >>> :set -XDerivingVia
+-- >>> import Data.Proxy (Proxy(..))
+-- >>> :{
+-- data Reaction
+--   = ThumbsUp   (Proxy "+1")
+--   | ThumbsDown (Proxy "-1")
+--   | Laugh      (Proxy "laugh")
+--   | Confused   (Proxy "confused")
+--   | Heart      (Proxy "heart")
+--   | Hooray     (Proxy "hooray")
+--   | Rocket     (Proxy "rocket")
+--   | Eyes       (Proxy "eyes")
+--   deriving (Generic, Show)
+--   deriving (Aeson.ToJSON, Aeson.FromJSON) via (EnumLike Reaction)
+-- :}
+--
+-- (<https://developer.github.com/v3/reactions/#reaction-types>)
+--
+-- >>> Aeson.decode @Reaction "\"heart\""
+-- Just (Heart Proxy)
+--
+-- The redundant 'Proxy' associated with each constructor is a /bit/ annoying,
+-- but empty record patterns can help here:
+--
+-- >>> :{
+-- isLaugh Laugh{} = True
+-- isLaugh _       = False
+-- :}
+--
 newtype EnumLike a = EnumLike { getEnumLike :: a }
 
 instance (Typeable a, Generic a, FromText (Rep a)) => Aeson.FromJSON (EnumLike a) where
@@ -42,7 +85,6 @@ instance (Typeable a, Generic a, FromText (Rep a)) => Aeson.FromJSON (EnumLike a
 
 instance (Generic a, ToText (Rep a)) => Aeson.ToJSON (EnumLike a) where
   toJSON (EnumLike a) = Aeson.String $ toText (from a)
-
 
 class FromText (f :: Type -> Type) where
   fromText :: Text -> Aeson.Parser (f p)
@@ -59,9 +101,8 @@ instance (KnownSymbol key) => FromText (Rec0 (Proxy key)) where
     | otherwise = fail "nope"
 
 instance FromText U1 where
-  fromText "" = pure U1
+  fromText ""    = pure U1
   fromText other = fail ("expecting empty text, got: " <> show other)
-
 
 class ToText (f :: Type -> Type) where
   toText :: f p -> Text
@@ -78,7 +119,6 @@ instance (KnownSymbol key) => ToText (Rec0 (Proxy key)) where
 
 instance ToText U1 where
   toText U1 = ""
-
 
 typeName :: forall a. Typeable a => String
 typeName = show (typeOf (undefined :: a))

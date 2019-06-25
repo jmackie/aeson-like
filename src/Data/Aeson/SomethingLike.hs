@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 -- | 
 -- Interpret some JSON without losing the original data. 
+--
 module Data.Aeson.SomethingLike 
   ( SomethingLike
   , unwrap

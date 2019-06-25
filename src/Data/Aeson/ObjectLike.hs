@@ -14,7 +14,8 @@
 -- |
 -- Decorate product/record types with JSON object keys.
 --
--- This module is only useful with '-XDerivingVia' (introduced in GHC 8.6.x).
+-- Note this module is only useful with @-XDerivingVia@ (introduced in GHC 8.6.x).
+--
 module Data.Aeson.ObjectLike
   ( ObjectLike(..)
   , Prop(..)

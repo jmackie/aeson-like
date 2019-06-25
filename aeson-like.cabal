@@ -1,17 +1,23 @@
 cabal-version: 2.2
+
 name: aeson-like
 version: 0.1.0.0
-synopsis: TODO
-description: TODO: really should to this
+
+synopsis: Easy API interop
+description: 
+  A collection of helpers that make working with typical JSON APIs simpler and
+  easier.
+
 homepage: https://github.com/jmackie/aeson-like
--- bug-reports:
+bug-reports: https://github.com/jmackie/aeson-like/issues
 license: BSD-3-Clause
 license-file: LICENSE
 author: Jordan Mackie
 maintainer: jordan.mackie@habito.com
--- copyright:
+copyright: (c) 2019 Jordan Mackie
 category: Network
---extra-source-files:
+extra-source-files:
+  README.md
 tested-with:
   GHC==8.6.4
 

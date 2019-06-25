@@ -2,11 +2,9 @@
 
 [![Build Status](https://travis-ci.org/jmackie/aeson-like.svg?branch=master)](https://travis-ci.org/jmackie/aeson-like)
 
-> NOTE: name is subject to change cos I don't like it.
-
 ## tl;dr
 
-A bunch of utilities to make developing against `json` APIs easier.
+A bunch of utilities to make developing against `JSON` APIs easier.
 
 <details>
 <summary>Code Preamble</summary>
