@@ -29,30 +29,37 @@ import qualified Data.Aeson as Aeson
 --
 -- === Example
 -- 
--- Suppose we have the following type that we expect receive from some poorly
--- documented web API...
+-- Suppose we have the following type that we expect receive from an API we
+-- don't fully understand...
 --
 -- >>> :{
--- data SuperHero 
---   = SuperHero { real_name :: String } 
+-- data Planet 
+--   = Planet 
+--       { name    :: String 
+--       , gravity :: String
+--       } 
 --   deriving (Show, Generic, Aeson.FromJSON)
 -- :}
 --
+-- (<https://swapi.co/documentation#planets>)
+--
 -- In reality we expect the API to give us more data than this, and we don't 
--- want to drop that data on the floor, so we decode into a 'SomethingLike' @SuperHero@
+-- want to drop that data on the floor, so we decode into a 'SomethingLike' @Planet@
 -- 
--- >>> let json = "{\"hero_name\":\"Iron Man\",\"real_name\":\"Tony Stark\"}"
--- >>> let hero = Aeson.decode @(SomethingLike SuperHero) json & fromJust
+-- >>> let json = "{\"name\":\"Tatooine\",\"climate\":\"Arid\",\"gravity\":\"1\"}"
+-- >>> let planet = Aeson.decode @(SomethingLike Planet) json & fromJust
 --
 -- We can then 'unwrap' the part of that data we understand:
 --
--- >>> print (unwrap hero)
--- SuperHero {real_name = "Tony Stark"}
+-- >>> print (unwrap planet)
+-- Planet {name = "Tatooine", gravity = "1"}
 --
 -- And we can serialize the original json (e.g. to a log):
 --
--- >>> print (Aeson.encode hero)
--- "{\"hero_name\":\"Iron Man\",\"real_name\":\"Tony Stark\"}"
+-- >>> print (Aeson.encode planet)
+-- "{\"name\":\"Tatooine\",\"climate\":\"Arid\",\"gravity\":\"1\"}"
+-- >>> Aeson.encode planet == json
+-- True
 -- 
 data SomethingLike a = SomethingLike Aeson.Value a
   deriving stock (Show)
@@ -64,6 +71,6 @@ instance Aeson.ToJSON (SomethingLike a) where
   toJSON (SomethingLike value _) = value
 
 -- | 
--- Return the interpreted value.
+-- Return the "interpreted" value.
 unwrap :: SomethingLike a -> a
 unwrap (SomethingLike _ a) = a

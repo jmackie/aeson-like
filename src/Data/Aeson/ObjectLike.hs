@@ -12,8 +12,9 @@
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
 -- |
--- TODO
+-- Decorate product/record types with JSON object keys.
 --
+-- This module is only useful with '-XDerivingVia' (introduced in GHC 8.6.x).
 module Data.Aeson.ObjectLike
   ( ObjectLike(..)
   , Prop(..)
@@ -34,8 +35,41 @@ import           Data.Typeable       (Typeable, typeOf)
 import           GHC.Generics
 import           GHC.TypeLits        (KnownSymbol, Symbol, symbolVal)
 
+-- $setup
+-- >>> :set -XDeriveGeneric
+-- >>> :set -XDataKinds
+-- >>> import GHC.Generics (Generic)
+-- >>> import qualified Data.Aeson as Aeson
+
 -- |
--- TODO
+-- A @DerivingVia@ helper for generating 'Aeson.FromJSON' and 'Aeson.ToJSON'
+-- instances. 'ObjectLike' @a@ has these instances when @a@ is essentially a 
+-- bunch of 'Prop' values.
+--
+-- === Example
+--
+-- >>> :set -XDerivingVia
+-- >>> :{
+-- data PowerStats 
+--   = PowerStats
+--       { strengthStat :: Prop "strength" String
+--       , speedStat    :: Prop "speed"    String
+--       , powerStat    :: Prop "power"    String
+--       , combatStat   :: Prop "combat"   String
+--       }
+--   deriving (Generic, Show)
+--   deriving (Aeson.ToJSON, Aeson.FromJSON) via (ObjectLike PowerStats)
+-- :}
+--
+-- (<https://superheroapi.com/#powerstats>)
+--
+-- >>> let stats = PowerStats (Prop "26") (Prop "27") (Prop "47") (Prop "100")
+-- >>> let json = Aeson.encode stats
+-- >>> json
+-- "{\"strength\":\"26\",\"combat\":\"100\",\"speed\":\"27\",\"power\":\"47\"}"
+-- >>> Aeson.decode @PowerStats json
+-- Just (PowerStats {strengthStat = "26", speedStat = "27", powerStat = "47", combatStat = "100"})
+--
 newtype ObjectLike a = ObjectLike { getObjectLike :: a }
 
 instance (Typeable a, Generic a, FromObject (Rep a)) => Aeson.FromJSON (ObjectLike a) where
@@ -47,18 +81,26 @@ instance (Typeable a, Generic a, FromObject (Rep a)) => Aeson.FromJSON (ObjectLi
 instance (Generic a, ToObject (Rep a)) => Aeson.ToJSON (ObjectLike a) where
   toJSON (ObjectLike a) = Aeson.Object $ toObject (from a)
 
-
 -- |
--- @Prop@ lets us capture the keys associated with parts of a product type.
+-- 'Prop' (short for property) associates some value with its key in a JSON
+-- object. Hence it's only really useful as a field of some product type (see
+-- the example for 'ObjectLike'.
+--
+-- Note that type applying the constructor can introduce an extra sanity check, 
+-- much like bare record selectors.
+--
+-- >>> :set -XTypeApplications
+-- >>> data Point = Point (Prop "x" Int) (Prop "y" Int) deriving (Generic, Show)
+-- >>> Point (Prop @"x" 24) (Prop @"y" 42)
+-- Point 24 42
 newtype Prop (key :: Symbol) a = Prop { unProp :: a }
   deriving stock (Generic, Functor, Foldable, Traversable)
   deriving newtype (Eq, Ord, Show, Aeson.ToJSON, Aeson.FromJSON, Hashable)
 
 -- |
--- TODO
-reprop :: forall key key' a. Prop key' a -> Prop key a
+-- Coerce the key associated with a 'Prop' value.
+reprop :: forall oldkey newkey a. Prop oldkey a -> Prop newkey a
 reprop (Prop a) = Prop a
-
 
 class FromObject (f :: Type -> Type) where
   fromObject :: Aeson.Object -> Aeson.Parser (f p)
@@ -82,7 +124,6 @@ instance FromObject U1 where
     | HashMap.null obj = pure U1
     | otherwise = fail "expecting an empty object"
 
-
 class ToObject (f :: Type -> Type) where
   toObject :: f p -> Aeson.Object
 
@@ -98,7 +139,6 @@ instance (KnownSymbol key, Aeson.ToJSON a) => ToObject (Rec0 (Prop key a)) where
 
 instance ToObject U1 where
   toObject U1 = HashMap.empty
-
 
 typeName :: forall a. Typeable a => String
 typeName = show (typeOf (undefined :: a))
