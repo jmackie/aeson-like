@@ -2,124 +2,135 @@
 
 [![Build Status](https://travis-ci.org/jmackie/aeson-like.svg?branch=master)](https://travis-ci.org/jmackie/aeson-like)
 
-## tl;dr
+A collection of things I've found useful when developing against
+third-party/vendor/non-haskell JSON APIs.
 
-A bunch of utilities to make developing against `JSON` APIs easier.
+To demonstrate how this can be useful we'll work through a real-world example:
+consuming the [PokéAPI](https://pokeapi.co/), cos Pokémon is life. Specifically we want to be able to
+query information about a Pokémon by name.
 
-<details>
-<summary>Code Preamble</summary>
-<p>
-
-All the code in this file is compiled and tested, so we need a module header.
+But first, the obligatory preamble:
 
 ```haskell
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE DerivingVia       #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications  #-}
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE DeriveGeneric    #-}
+{-# LANGUAGE DerivingVia      #-}
+{-# LANGUAGE TypeApplications #-}
 
-import Prelude
+import GHC.Generics         (Generic)
+import Data.Proxy           (Proxy(..))
+import Data.Text            (Text)
+import Data.ByteString.Lazy (ByteString)
 
---import GHC.Generics (Generic)
-import Data.Aeson ((.:), (.=))
+import qualified Network.HTTP.Client as Client
+import qualified Network.HTTP.Client.TLS as Client
+
 import qualified Data.Aeson as Aeson
---import Data.Proxy (Proxy(..))
-import Test.Tasty
-import Test.Tasty.HUnit
-
---import Data.Aeson.ObjectLike (ObjectLike(..), Prop(..))
---import Data.Aeson.EnumLike (EnumLike(..))
 ```
 
-</p>
-</details>
+And here are the imports that we're interested in:
+
+```haskell
+import Data.Aeson.ObjectLike    (ObjectLike(..), Prop(..))
+import Data.Aeson.EnumLike      (EnumLike(..))
+import Data.Aeson.SomethingLike (SomethingLike)
+```
 
 ## `Data.Aeson.ObjectLike`
 
-Suppose we have the following (_obligatory_) user type:
+We need to model the `Pokémon` object returned by the API.
 
-```json
-{
-  "id": 42,
-  "name": "foo",
-  "age": 24
-}
-```
+To get a working `FromJSON` instance you would typically do one of the following:
 
-If we want to decode this to a haskell type we have a few choices.
+1. Write the instance by hand.
+2. Align your record selector names with the keys of the expected object, so
+   the default generic instance Just Works.
+3. Pass some custom options to [`genericParseJSON`](https://hackage.haskell.org/package/aeson/docs/Data-Aeson.html#v:genericParseJSON) 
+   to map the expected object keys to nice haskell record selectors.
 
-**Option 1**: Crack open the [`aeson`][aeson-hackage] docs and remember how to
-write instances by hand
+But for any non-trivial project these can all become annoying. Having lots of hand-written
+instances is noisy and unwieldy. Using object keys (e.g. `id`, `type`...) as
+record selectors quickly leads to name clashes and the dreaded
+`-XDuplicateRecordFields`. And fiddling with `genericParseJSON` options can
+be obscure and hard to debug.
+
+I would rather have the logic for mapping selectors to object keys defined 
+alongside the type. Introducing `ObjectLike`...
 
 ```haskell
+data Pokemon
+  = Pokemon
+      { pokemonName  :: Prop "name" Text
+      , pokemonId    :: Prop "id" Int
+      , pokemonTypes :: Prop "types" [PokemonType]
+      }
 
-data User = User
-  { userId   :: Int
-  , userName :: String
-  , userAge  :: Int
-  }
-  deriving (Show, Eq)
-
-instance Aeson.FromJSON User where
-  parseJSON =
-    Aeson.withObject "User" $ \object ->
-      User <$> object .: "id"
-           <*> object .: "name"
-           <*> object .: "age"
-
-instance Aeson.ToJSON User where
-  toJSON user =
-    Aeson.object
-      [ "id"   .= userId user
-      , "name" .= userName user
-      , "age"  .= userAge user
-      ]
+  deriving (Generic, Show)
+  deriving (Aeson.ToJSON, Aeson.FromJSON) via (ObjectLike Pokemon)
 ```
 
-That's nice and explicit, but for any non-trivial application you run into
-several issues:
+`ObjectLike a` has `ToJSON` and `FromJSON` instances if `a` is essentially
+a product of `Prop` types. 
 
-1. It's noisy. The important logic - i.e. which record fields map to which
-   object keys - can get lost in the boilerplate.
+`Prop` is a newtype that carries a type-level string, where that string 
+corresponds to a key in the expected JSON object.
 
-2. It's bloated. That boilerplate can make for unwieldy modules quite
-   quickly. While _explicit_ code like this is generally easier to read and
-   follow, I find that's true only up until a certain amount of code.
+```haskell
+data PokemonType
+  = PokemonType (Prop "slot" Int) (Prop "type" (NamedAPIResource Type))
 
-3. The logic for mapping record selectors to object keys is duplicated.
+  deriving (Generic, Show)
+  deriving (Aeson.ToJSON, Aeson.FromJSON) via (ObjectLike PokemonType)
 
-4. If you're writing a lot of mechanical code like this, it's very easy to get
-   wrong. And the compiler mostly isn't going to help you.
+data NamedAPIResource a
+  = NamedAPIResource
+      { resourceName :: Prop "name" a
+      , resourceUrl  :: Prop "url" Text
+      }
 
-## TODO
+  deriving (Generic, Show)
+  deriving (Aeson.ToJSON, Aeson.FromJSON) via (ObjectLike (NamedAPIResource a))
+```
 
-- [ ] Write this README
-- [ ] Better type errors
-- [ ] Document things
-- [ ] More tests (including hedgehog properties)
-- [x] Travis CI
+## `Data.Aeson.EnumLike`
 
-<details>
-<summary>Tests</summary>
-<p>
+Often when working with JSON APIs we'll want to decode a string into a nice sum 
+type. The issue here is that the logic for mapping strings to constructors is 
+split across two separate `ToJSON` and `FromJSON` instances. And writing those 
+instances is mechanical and tedious.
+
+We can instead associate each constructor with a type-level string and use that
+informating to generically derive `ToJSON` and `FromJSON` instances.
+
+```haskell
+data Type
+  = FireType (Proxy "fire")
+  | PsychicType (Proxy "psychic")
+  | GroundType (Proxy "ground")
+  -- ...etc
+
+  deriving (Generic, Show)
+  deriving (Aeson.ToJSON, Aeson.FromJSON) via (EnumLike Type)
+```
+
+## `Data.Aeson.SomethingLike`
+
+If you're only decoding part of the expected data (intentionally or unintentionally) 
+you might want to keep the original data around. 
+
+```haskell
+decodePokemonResponse 
+  :: Client.Response ByteString -> Either String (SomethingLike Pokemon)
+decodePokemonResponse = Aeson.eitherDecode . Client.responseBody
+```
+
+## Putting it all together
 
 ```haskell
 main :: IO ()
-main = defaultMain tests
-
-tests :: TestTree
-tests = testGroup "README"
-  [ testCase "User example" $ do
-      Aeson.encode (User 1 "john doe" 42) @?=
-        "{\"age\":42,\"name\":\"john doe\",\"id\":1}"
-
-      Aeson.decode "{\"age\":42,\"name\":\"john doe\",\"id\":1}" @?=
-        Just (User 1 "john doe" 42)
-  ]
+main = do
+  manager  <- Client.newManager Client.tlsManagerSettings
+  request  <- Client.parseRequest "GET https://pokeapi.co/api/v2/pokemon/ditto"
+  response <- Client.httpLbs request manager
+  print $ decodePokemonResponse response
 ```
-
-</p>
-</details>
-
-[aeson-hackage]: https://hackage.haskell.org/package/aeson

@@ -4,7 +4,7 @@ name: aeson-like
 version: 0.1.0.0
 
 synopsis: Easy API interop
-description: 
+description:
   A collection of helpers that make working with typical JSON APIs simpler and
   easier.
 
@@ -60,12 +60,12 @@ test-suite unit
 
 test-suite doc
   default-language: Haskell2010
-  ghc-options: -Wall 
+  ghc-options: -Wall
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   main-is: Doc.hs
   build-depends:
-    base, 
+    base,
     doctest,
 
 test-suite readme
@@ -78,7 +78,9 @@ test-suite readme
     base,
     aeson,
     aeson-like,
-    tasty,
-    tasty-hunit,
+    text,
+    bytestring,
+    http-client,
+    http-client-tls,
   build-tool-depends:
     markdown-unlit:markdown-unlit
